@@ -37,22 +37,34 @@ Schema: `data/raw/customers.csv`, `policies.csv`, `claims.csv`
   this line is the one to re-underwrite or re-price first.
 - **Lebensversicherung (life) has the lowest loss ratio (~35%)** but also the
   lowest claim frequency by design — expected given the product structure.
-- Fraud-flagged claims cluster more heavily in Kfz and Hausrat, the two
-  highest-frequency product lines.
+- **Fraud flags are low and fairly even:** 61 of 1,562 claims (3.9%) are
+  flagged for review. By product line the rate runs from 2.5% (Hausrat) to
+  7.7% (Lebensversicherung), but life has only 26 claims (2 flagged), so
+  that gap is within noise. In this synthetic data the flags are not tied
+  to product type, so no line is a genuine fraud hotspot.
 
-See `screenshots/` for the supporting charts (loss ratio by policy type,
-monthly claims trend, regional distribution, fraud-flag rate).
+`screenshots/` holds the Python charts (`loss_ratio_by_policy_type.png`,
+`monthly_claims_trend.png`, `policy_distribution_by_region.png`,
+`fraud_flag_rate.png`) and the three Power BI page exports shown below.
 
-## Power BI Dashboard Preview
+## Power BI Dashboard
 
-The interactive Power BI dashboard provides insights into insurance profitability, claims patterns, and agent performance.
+Interactive 3-page report on insurance profitability, claims and fraud
+patterns, and agent performance:
+[`powerbi/German Insurance Book Analysis.pbix`](powerbi/German%20Insurance%20Book%20Analysis.pbix)
+(PDF export: [`powerbi/Insurance Book Analysis.pdf`](powerbi/Insurance%20Book%20Analysis.pdf))
 
-**Page 1 — Insurance Overview**
-![Insurance Overview](screenshots/powerbi_page1_overview.png)
-**Page 2 — Claims Analysis**
-![Claims Analysis](screenshots/powerbi_page2_claims.png)
-**Page 3 — Agent Performance**
-![Agent Performance](screenshots/powerbi_page3_agents.png)
+**Page 1 — Executive Overview**
+
+![Executive Overview](screenshots/powerbi_page1_overview.png)
+
+**Page 2 — Claims, Fraud & Settlement Analysis**
+
+![Claims, Fraud and Settlement Analysis](screenshots/powerbi_page2_claims.png)
+
+**Page 3 — Agent & Customer Analysis**
+
+![Agent and Customer Analysis](screenshots/powerbi_page3_agents.png)
 
 ## Tech stack
 
@@ -68,13 +80,17 @@ insurance-data-analysis/
 ├── data/raw/              customers.csv, policies.csv, claims.csv
 ├── python/
 │   ├── generate_data.py   synthetic data generator
-│   └── eda.py             exploratory analysis + chart generation
+│   ├── eda.py             exploratory analysis + chart generation
+│   └── EDA.ipynb          notebook version of the EDA (with outputs)
 ├── sql/
 │   ├── 01_schema.sql       table definitions
 │   └── 02_analysis_queries.sql   7 business-question queries
 ├── powerbi/
-│   └── BUILD_GUIDE.md      DAX measures + report page spec
-└── screenshots/            chart outputs / dashboard exports
+│   ├── BUILD_GUIDE.md      DAX measures + report page spec
+│   ├── German Insurance Book Analysis.pbix
+│   └── Insurance Book Analysis.pdf
+├── screenshots/            Python charts + Power BI page exports
+└── .gitignore
 ```
 
 ## How to run
@@ -85,6 +101,11 @@ pip install pandas numpy matplotlib faker
 python generate_data.py   # regenerates the CSVs in data/raw/
 python eda.py              # runs EDA, writes charts to screenshots/
 ```
+
+To open the Power BI report, load `powerbi/German Insurance Book Analysis.pbix`
+in Power BI Desktop. If the data source path is broken on your machine, use
+**Transform data → Data source settings → Change Source** and point it to
+the CSVs in `data/raw/`.
 
 Load the schema and run the analysis queries against SQLite, PostgreSQL,
 or SQL Server using the files in `sql/`.

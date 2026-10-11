@@ -1,17 +1,41 @@
 -- 02_analysis_queries.sql
 -- Core business questions an insurance analytics team would actually ask.
 
--- 1. Loss ratio by policy type (claims paid / premium collected)
+-- 1. Loss ratio by policy type (claims paid / EARNED premium)
 --    Loss ratio is the single most important underwriting KPI in insurance.
+--    Earned premium (not one year of annual premium) is the correct denominator
+--    because claims accumulate over the whole 2022-2025 window.
+WITH policy_base AS (
+    -- one row per policy, with earned premium = annual premium x years of exposure,
+    -- capped at the 4-year observation window (same logic as the DAX / Python)
+    SELECT
+        p.policy_id,
+        p.policy_type,
+        p.agent_id,
+        p.annual_premium_eur,
+        p.annual_premium_eur
+            * MIN(4.0, (julianday('2025-12-31') - julianday(p.start_date)) / 365.25) AS earned_premium_eur
+        -- PostgreSQL: LEAST(4.0, ('2025-12-31'::date - p.start_date) / 365.25)
+        -- MSSQL: CASE WHEN DATEDIFF(day, p.start_date, '2025-12-31') / 365.25 > 4 THEN 4
+        --             ELSE DATEDIFF(day, p.start_date, '2025-12-31') / 365.25 END
+    FROM policies p
+),
+paid AS (
+    -- paid claims aggregated per policy BEFORE joining, so a policy's premium is
+    -- never repeated when it has several claims (join fan-out)
+    SELECT policy_id, SUM(claim_amount_eur) AS paid_eur
+    FROM claims
+    WHERE claim_status = 'Paid'
+    GROUP BY policy_id
+)
 SELECT
-    p.policy_type,
-    ROUND(SUM(p.annual_premium_eur), 2)                         AS total_premium_eur,
-    ROUND(COALESCE(SUM(c.claim_amount_eur), 0), 2)               AS total_claims_paid_eur,
-    ROUND(COALESCE(SUM(c.claim_amount_eur), 0) / SUM(p.annual_premium_eur) * 100, 1) AS loss_ratio_pct
-FROM policies p
-LEFT JOIN claims c
-    ON c.policy_id = p.policy_id AND c.claim_status = 'Paid'
-GROUP BY p.policy_type
+    b.policy_type,
+    ROUND(SUM(b.earned_premium_eur), 2)                                   AS earned_premium_eur,
+    ROUND(COALESCE(SUM(pd.paid_eur), 0), 2)                               AS total_claims_paid_eur,
+    ROUND(COALESCE(SUM(pd.paid_eur), 0) / SUM(b.earned_premium_eur) * 100, 1) AS loss_ratio_pct
+FROM policy_base b
+LEFT JOIN paid pd ON pd.policy_id = b.policy_id
+GROUP BY b.policy_type
 ORDER BY loss_ratio_pct DESC;
 
 
@@ -28,25 +52,50 @@ GROUP BY p.region
 ORDER BY claims_per_policy DESC;
 
 
--- 3. Agent performance ranking — loss ratio and book size (window function)
-WITH agent_book AS (
+-- 3. Agent performance ranking — loss ratio on earned premium and book size (window function)
+WITH policy_base AS (
+    -- one row per policy, with earned premium = annual premium x years of exposure,
+    -- capped at the 4-year observation window (same logic as the DAX / Python)
     SELECT
+        p.policy_id,
+        p.policy_type,
         p.agent_id,
-        SUM(p.annual_premium_eur)                       AS premium_written,
-        COALESCE(SUM(c.claim_amount_eur), 0)            AS claims_paid,
-        COUNT(DISTINCT p.policy_id)                     AS policies_sold
+        p.annual_premium_eur,
+        p.annual_premium_eur
+            * MIN(4.0, (julianday('2025-12-31') - julianday(p.start_date)) / 365.25) AS earned_premium_eur
+        -- PostgreSQL: LEAST(4.0, ('2025-12-31'::date - p.start_date) / 365.25)
+        -- MSSQL: CASE WHEN DATEDIFF(day, p.start_date, '2025-12-31') / 365.25 > 4 THEN 4
+        --             ELSE DATEDIFF(day, p.start_date, '2025-12-31') / 365.25 END
     FROM policies p
-    LEFT JOIN claims c ON c.policy_id = p.policy_id AND c.claim_status = 'Paid'
-    GROUP BY p.agent_id
+),
+paid AS (
+    -- paid claims aggregated per policy BEFORE joining, so a policy's premium is
+    -- never repeated when it has several claims (join fan-out)
+    SELECT policy_id, SUM(claim_amount_eur) AS paid_eur
+    FROM claims
+    WHERE claim_status = 'Paid'
+    GROUP BY policy_id
+),
+agent_book AS (
+    SELECT
+        b.agent_id,
+        COUNT(*)                              AS policies_sold,
+        SUM(b.annual_premium_eur)             AS premium_written,
+        SUM(b.earned_premium_eur)             AS earned_premium,
+        COALESCE(SUM(pd.paid_eur), 0)         AS claims_paid
+    FROM policy_base b
+    LEFT JOIN paid pd ON pd.policy_id = b.policy_id
+    GROUP BY b.agent_id
 )
 SELECT
     agent_id,
     policies_sold,
-    ROUND(premium_written, 2)  AS premium_written_eur,
-    ROUND(claims_paid, 2)      AS claims_paid_eur,
-    ROUND(claims_paid / NULLIF(premium_written, 0) * 100, 1) AS loss_ratio_pct,
-    RANK() OVER (ORDER BY premium_written DESC)         AS rank_by_volume,
-    RANK() OVER (ORDER BY claims_paid / NULLIF(premium_written, 0) ASC) AS rank_by_profitability
+    ROUND(premium_written, 2)   AS premium_written_eur,
+    ROUND(earned_premium, 2)    AS earned_premium_eur,
+    ROUND(claims_paid, 2)       AS claims_paid_eur,
+    ROUND(claims_paid / NULLIF(earned_premium, 0) * 100, 1) AS loss_ratio_pct,
+    RANK() OVER (ORDER BY premium_written DESC)                          AS rank_by_volume,
+    RANK() OVER (ORDER BY claims_paid / NULLIF(earned_premium, 0) ASC)   AS rank_by_profitability
 FROM agent_book
 ORDER BY rank_by_volume;
 
