@@ -43,6 +43,17 @@ Schema: `data/raw/customers.csv`, `policies.csv`, `claims.csv`
 See `screenshots/` for the supporting charts (loss ratio by policy type,
 monthly claims trend, regional distribution, fraud-flag rate).
 
+## Power BI Dashboard Preview
+
+The interactive Power BI dashboard provides insights into insurance profitability, claims patterns, and agent performance.
+
+Page 1 — Insurance Overview
+![Insurance Overview](screenshots/powerbi_page1_overview.png)
+Page 2 — Claims Analysis
+![Claims Analysis](screenshots/powerbi_page2_claims.png)
+Page 3 — Agent Performance
+![Agent Performance](screenshots/powerbi_page2_agents.png)
+
 ## Tech stack
 
 - **Python** (pandas, matplotlib, Faker) — data generation and EDA

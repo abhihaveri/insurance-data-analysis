@@ -1,6 +1,6 @@
 # Power BI Build Guide
 
- Power BI Desktop on your machine, then export
+Power BI Desktop on your machine, then export
 screenshots and the .pbix into this folder before pushing to GitHub.
 
 ## 1. Get Data
