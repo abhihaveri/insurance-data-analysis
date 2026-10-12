@@ -84,7 +84,7 @@ total_claims_paid = paid["claim_amount_eur"].sum()
 overall_loss_ratio = total_claims_paid / total_premium * 100
 churn_rate = (policies["status"].isin(["Lapsed", "Cancelled"])).mean() * 100
 
-print(f"Total premium written:   EUR {total_premium:,.0f}")
+print(f"Total earned premium:    EUR {total_premium:,.0f}")
 print(f"Total claims paid:       EUR {total_claims_paid:,.0f}")
 print(f"Overall loss ratio:      {overall_loss_ratio:.1f}%")
 print(f"Overall churn rate:      {churn_rate:.1f}%")
