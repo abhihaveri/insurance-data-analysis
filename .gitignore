@@ -1,0 +1,13 @@
+# Jupyter
+.ipynb_checkpoints/
+EDA executed
+
+# Python
+__pycache__/
+*.pyc
+
+# OS / editor / Office temp files
+.DS_Store
+Thumbs.db
+~$*
+*.tmp
