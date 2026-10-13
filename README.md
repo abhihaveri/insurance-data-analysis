@@ -37,6 +37,10 @@ Schema: `data/raw/customers.csv`, `policies.csv`, `claims.csv`
   this line is the one to re-underwrite or re-price first.
 - **Lebensversicherung (life) has the lowest loss ratio (~35%)** but also the
   lowest claim frequency by design — expected given the product structure.
+- **Claims paid rise every year (EUR 0.18M in 2022 to EUR 3.09M in 2025)**
+  because the book grows: policies start between Jan 2022 and Jun 2025 and
+  claims accrue after each start. The loss ratio, which divides by earned
+  premium, is the comparable measure, not the claim total.
 - **Fraud flags are low and fairly even:** 61 of 1,562 claims (3.9%) are
   flagged for review. By product line the rate runs from 2.5% (Hausrat) to
   7.7% (Lebensversicherung), but life has only 26 claims (2 flagged), so
@@ -52,7 +56,6 @@ Schema: `data/raw/customers.csv`, `policies.csv`, `claims.csv`
 Interactive 3-page report on insurance profitability, claims and fraud
 patterns, and agent performance:
 [`powerbi/German Insurance Book Analysis.pbix`](powerbi/German%20Insurance%20Book%20Analysis.pbix)
-(PDF export: [`powerbi/Insurance Book Analysis.pdf`](powerbi/Insurance%20Book%20Analysis.pdf))
 
 **Page 1 — Executive Overview**
 
@@ -87,8 +90,7 @@ insurance-data-analysis/
 │   └── 02_analysis_queries.sql   7 business-question queries
 ├── powerbi/
 │   ├── BUILD_GUIDE.md      DAX measures + report page spec
-│   ├── German Insurance Book Analysis.pbix
-│   └── Insurance Book Analysis.pdf
+│   └── German Insurance Book Analysis.pbix
 ├── screenshots/            Python charts + Power BI page exports
 └── .gitignore
 ```
